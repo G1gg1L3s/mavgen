@@ -1,0 +1,10 @@
+[package]
+name = "mavgen"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+hard-xml = "1.36.0"
+
+[dev-dependencies]
+pretty_assertions = "1.4.0"
