@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 hard-xml = "1.36.0"
+topo_sort = "0.4.0"
 
 [dev-dependencies]
 normalize-path = "0.2.1"

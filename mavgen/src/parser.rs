@@ -46,7 +46,21 @@ pub enum Error {
     RecursionLimitExceeded {
         stack: Vec<PathBuf>,
     },
+    CycleDetected,
 }
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::Io { path, .. } => write!(f, "IO error while opening {:?}", path),
+            Error::Xml { path, .. } => write!(f, "XML error while parsing {:?}", path),
+            Error::RecursionLimitExceeded { .. } => write!(f, "recursion limit exceeded"),
+            Error::CycleDetected => write!(f, "inclusion cycle detected"),
+        }
+    }
+}
+
+impl std::error::Error for Error {}
 
 pub struct Parser<W> {
     parsed: HashMap<PathBuf, MavlinkFile>,
@@ -146,7 +160,28 @@ impl<W: World> Parser<W> {
         }
     }
 
-    pub fn finish(self) -> Result<HashMap<PathBuf, MavlinkFile>, Vec<Error>> {
+    fn detect_cycles(&mut self) {
+        let mut topo = topo_sort::TopoSort::with_capacity(self.parsed.len());
+        for (path, file) in &self.parsed {
+            if file.normalised_includes.contains(path) {
+                self.errors.push(Error::CycleDetected);
+                return;
+            }
+
+            topo.insert(path, file.normalised_includes.iter());
+        }
+
+        for node in &topo {
+            if node.is_err() {
+                self.errors.push(Error::CycleDetected);
+                return;
+            }
+        }
+    }
+
+    pub fn finish(mut self) -> Result<HashMap<PathBuf, MavlinkFile>, Vec<Error>> {
+        self.detect_cycles();
+
         if self.errors.is_empty() {
             Ok(self.parsed)
         } else {
@@ -211,6 +246,13 @@ mod tests {
             "parsed: {:?}",
             parser.parsed
         );
+
+        let parsed = parser.finish().unwrap();
+        assert!(
+            parsed.contains_key(Path::new("/cwd/test.xml")),
+            "parsed: {:?}",
+            parsed
+        );
     }
 
     #[test]
@@ -244,6 +286,9 @@ mod tests {
             "parsed: {:?}",
             parser.parsed
         );
+
+        let err = parser.finish().unwrap_err();
+        assert!(matches!(err[0], Error::CycleDetected));
     }
 
     #[test]
@@ -289,6 +334,9 @@ mod tests {
             "parsed: {:?}",
             parser.parsed
         );
+
+        let err = parser.finish().unwrap_err();
+        assert!(matches!(err[0], Error::CycleDetected));
     }
 
     #[test]
@@ -351,6 +399,9 @@ mod tests {
             "parsed: {:?}",
             parser.parsed
         );
+
+        let err = parser.finish().unwrap_err();
+        assert!(matches!(err[0], Error::CycleDetected));
     }
 
     #[test]
@@ -494,6 +545,23 @@ mod tests {
             "parsed: {:?}",
             parser.parsed
         );
+
+        let parsed = parser.finish().unwrap();
+        assert!(
+            parsed.contains_key(Path::new("/cwd/test-1.xml")),
+            "parsed: {:?}",
+            parsed
+        );
+        assert!(
+            parsed.contains_key(Path::new("/cwd/test-2.xml")),
+            "parsed: {:?}",
+            parsed
+        );
+        assert!(
+            parsed.contains_key(Path::new("/cwd/test-3.xml")),
+            "parsed: {:?}",
+            parsed
+        );
     }
 
     #[test]
@@ -554,6 +622,23 @@ mod tests {
             parser.parsed.contains_key(Path::new("/dir2/test-2.xml")),
             "parsed: {:?}",
             parser.parsed
+        );
+
+        let parsed = parser.finish().unwrap();
+        assert!(
+            parsed.contains_key(Path::new("/dir1/test.xml")),
+            "parsed: {:?}",
+            parsed
+        );
+        assert!(
+            parsed.contains_key(Path::new("/dir2/test-1.xml")),
+            "parsed: {:?}",
+            parsed
+        );
+        assert!(
+            parsed.contains_key(Path::new("/dir2/test-2.xml")),
+            "parsed: {:?}",
+            parsed
         );
     }
 }
