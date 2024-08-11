@@ -218,6 +218,28 @@ pub struct Field {
     pub description: String,
 }
 
+impl Field {
+    #[cfg(test)]
+    pub fn new_min(name: impl Into<String>, r#type: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            r#type: r#type.into(),
+            print_format: None,
+            r#enum: None,
+            display: None,
+            units: None,
+            increment: None,
+            min_value: None,
+            max_value: None,
+            multiplier: None,
+            default: None,
+            instance: None,
+            invalid: None,
+            description: String::new(),
+        }
+    }
+}
+
 #[derive(XmlRead, Clone, PartialEq, Debug)]
 #[xml(tag = "extensions")]
 pub struct Extensions;

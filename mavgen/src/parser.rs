@@ -191,11 +191,11 @@ impl<W: World> Parser<W> {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use std::collections::HashMap;
 
-    struct MockWorld(HashMap<PathBuf, String>);
+    pub struct MockWorld(pub HashMap<PathBuf, String>);
 
     impl World for MockWorld {
         fn read_file(&self, path: &Path) -> std::io::Result<String> {
