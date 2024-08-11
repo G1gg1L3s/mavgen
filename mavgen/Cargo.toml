@@ -7,4 +7,5 @@ edition = "2021"
 hard-xml = "1.36.0"
 
 [dev-dependencies]
+normalize-path = "0.2.1"
 pretty_assertions = "1.4.0"
