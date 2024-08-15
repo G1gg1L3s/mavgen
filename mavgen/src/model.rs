@@ -96,6 +96,23 @@ impl PrimitiveType {
             PrimitiveType::Uint64 => 8,
         }
     }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            PrimitiveType::Float => "float",
+            PrimitiveType::Double => "double",
+            PrimitiveType::Char => "char",
+            PrimitiveType::Int8 => "int8_t",
+            PrimitiveType::Uint8 => "uint8_t",
+            PrimitiveType::Uint8MavlinkVersion => "uint8_t",
+            PrimitiveType::Int16 => "int16_t",
+            PrimitiveType::Uint16 => "uint16_t",
+            PrimitiveType::Int32 => "int32_t",
+            PrimitiveType::Uint32 => "uint32_t",
+            PrimitiveType::Int64 => "int64_t",
+            PrimitiveType::Uint64 => "uint64_t",
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -174,6 +191,35 @@ impl Enum {
             val if val <= u64::from(u32::MAX) => RustSizeType::U32,
             _ => RustSizeType::U64,
         }
+    }
+}
+
+impl Message {
+    pub fn extra_crc(&self) -> u8 {
+        let mut crc = crc_any::CRCu16::crc16mcrf4cc();
+
+        crc.digest(self.name.as_ref().as_bytes());
+        crc.digest(b" ");
+
+        for field in &self.fields {
+            let typ = match field.r#type {
+                FieldType::Primitive(typ) => typ,
+                FieldType::Array(typ, _) => typ,
+            };
+
+            crc.digest(typ.as_str().as_bytes());
+            crc.digest(b" ");
+
+            crc.digest(field.name.as_ref().as_bytes());
+            crc.digest(b" ");
+
+            if let FieldType::Array(_, size) = field.r#type {
+                crc.digest(&[size]);
+            }
+        }
+
+        let crcval = crc.get_crc();
+        ((crcval & 0xFF) ^ (crcval >> 8)) as u8
     }
 }
 
@@ -512,5 +558,220 @@ mod tests {
         assert_eq!(enm.min_rust_size(), RustSizeType::U32);
         enm.entries[0].value = 4294967296;
         assert_eq!(enm.min_rust_size(), RustSizeType::U64);
+    }
+
+    fn default_field() -> Field {
+        Field {
+            name: "empty".parse().unwrap(),
+            r#type: FieldType::Primitive(PrimitiveType::Uint8MavlinkVersion),
+            print_format: None,
+            r#enum: None,
+            display: None,
+            units: None,
+            increment: None,
+            min_value: None,
+            max_value: None,
+            multiplier: None,
+            default: None,
+            instance: None,
+            invalid: None,
+            description: None,
+        }
+    }
+
+    #[test]
+    fn test_crc_extra_one_field() {
+        let message = Message {
+            name: "UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT".parse().unwrap(),
+            id: 10003,
+            dev_status: None,
+            description: None,
+            fields: vec![Field {
+                name: "rfHealth".parse().unwrap(),
+                r#type: FieldType::Primitive(PrimitiveType::Uint8),
+                print_format: None,
+                r#enum: Some("UAVIONIX_ADSB_RF_HEALTH".parse().unwrap()),
+                display: Some("bitmask".into()),
+                description: Some("ADS-B transponder messages".into()),
+                ..default_field()
+            }],
+            extension_fields: vec![],
+        };
+
+        assert_eq!(message.extra_crc(), 4);
+    }
+
+    #[test]
+    fn test_crc_extra_many_fields() {
+        let message = Message {
+            name: "UAVIONIX_ADSB_OUT_DYNAMIC".parse().unwrap(),
+            id: 10002,
+            dev_status: None,
+            description: Some(
+                "Dynamic data used to generate ADS-B out transponder data (send at 5Hz)".into(),
+            ),
+            fields: vec![
+                Field {
+                    name: "utcTime".parse().unwrap(),
+                    r#type: FieldType::Primitive(PrimitiveType::Uint32),
+                    ..default_field()
+                },
+                Field {
+                    name: "gpsLat".parse().unwrap(),
+                    r#type: FieldType::Primitive(PrimitiveType::Int32),
+                    ..default_field()
+                },
+                Field {
+                    name: "gpsLon".parse().unwrap(),
+                    r#type: FieldType::Primitive(PrimitiveType::Int32),
+                    ..default_field()
+                },
+                Field {
+                    name: "gpsAlt".parse().unwrap(),
+                    r#type: FieldType::Primitive(PrimitiveType::Int32),
+                    ..default_field()
+                },
+                Field {
+                    name: "baroAltMSL".parse().unwrap(),
+                    r#type: FieldType::Primitive(PrimitiveType::Int32),
+                    ..default_field()
+                },
+                Field {
+                    name: "accuracyHor".parse().unwrap(),
+                    r#type: FieldType::Primitive(PrimitiveType::Uint32),
+                    ..default_field()
+                },
+                Field {
+                    name: "accuracyVert".parse().unwrap(),
+                    r#type: FieldType::Primitive(PrimitiveType::Uint16),
+                    ..default_field()
+                },
+                Field {
+                    name: "accuracyVel".parse().unwrap(),
+                    r#type: FieldType::Primitive(PrimitiveType::Uint16),
+                    ..default_field()
+                },
+                Field {
+                    name: "velVert".parse().unwrap(),
+                    r#type: FieldType::Primitive(PrimitiveType::Int16),
+                    ..default_field()
+                },
+                Field {
+                    name: "velNS".parse().unwrap(),
+                    r#type: FieldType::Primitive(PrimitiveType::Int16),
+                    ..default_field()
+                },
+                Field {
+                    name: "VelEW".parse().unwrap(),
+                    r#type: FieldType::Primitive(PrimitiveType::Int16),
+                    ..default_field()
+                },
+                Field {
+                    name: "state".parse().unwrap(),
+                    r#type: FieldType::Primitive(PrimitiveType::Uint16),
+                    ..default_field()
+                },
+                Field {
+                    name: "squawk".parse().unwrap(),
+                    r#type: FieldType::Primitive(PrimitiveType::Uint16),
+                    ..default_field()
+                },
+                Field {
+                    name: "gpsFix".parse().unwrap(),
+                    r#type: FieldType::Primitive(PrimitiveType::Uint8),
+                    ..default_field()
+                },
+                Field {
+                    name: "numSats".parse().unwrap(),
+                    r#type: FieldType::Primitive(PrimitiveType::Uint8),
+                    ..default_field()
+                },
+                Field {
+                    name: "emergencyStatus".parse().unwrap(),
+                    r#type: FieldType::Primitive(PrimitiveType::Uint8),
+                    ..default_field()
+                },
+            ],
+            extension_fields: vec![],
+        };
+
+        assert_eq!(message.extra_crc(), 186);
+    }
+
+    #[test]
+    fn test_crc_extra_ext_fields() {
+        let mut message = Message {
+            name: "MEMINFO".parse().unwrap(),
+            id: 152,
+            dev_status: None,
+            description: None,
+            fields: vec![
+                Field {
+                    name: "brkval".parse().unwrap(),
+                    r#type: FieldType::Primitive(PrimitiveType::Uint16),
+                    ..default_field()
+                },
+                Field {
+                    name: "freemem".parse().unwrap(),
+                    r#type: FieldType::Primitive(PrimitiveType::Uint16),
+                    ..default_field()
+                },
+            ],
+            extension_fields: vec![Field {
+                name: "freemem32".parse().unwrap(),
+                r#type: FieldType::Primitive(PrimitiveType::Uint32),
+                ..default_field()
+            }],
+        };
+
+        assert_eq!(message.extra_crc(), 208);
+
+        message.extension_fields.pop();
+        assert_eq!(message.extra_crc(), 208);
+    }
+
+    #[test]
+    fn test_crc_extra_mavlink_version_type() {
+        let message = Message {
+            name: "HEARTBEAT".parse().unwrap(),
+            id: 0,
+            dev_status: None,
+            description: None,
+            fields: vec![
+                Field {
+                    name: "custom_mode".parse().unwrap(),
+                    r#type: FieldType::Primitive(PrimitiveType::Uint32),
+                    ..default_field()
+                },
+                Field {
+                    name: "type".parse().unwrap(),
+                    r#type: FieldType::Primitive(PrimitiveType::Uint8),
+                    ..default_field()
+                },
+                Field {
+                    name: "autopilot".parse().unwrap(),
+                    r#type: FieldType::Primitive(PrimitiveType::Uint8),
+                    ..default_field()
+                },
+                Field {
+                    name: "base_mode".parse().unwrap(),
+                    r#type: FieldType::Primitive(PrimitiveType::Uint8),
+                    ..default_field()
+                },
+                Field {
+                    name: "system_status".parse().unwrap(),
+                    r#type: FieldType::Primitive(PrimitiveType::Uint8),
+                    ..default_field()
+                },
+                Field {
+                    name: "mavlink_version".parse().unwrap(),
+                    r#type: FieldType::Primitive(PrimitiveType::Uint8MavlinkVersion),
+                    ..default_field()
+                },
+            ],
+            extension_fields: vec![],
+        };
+
+        assert_eq!(message.extra_crc(), 50);
     }
 }
