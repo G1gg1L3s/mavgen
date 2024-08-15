@@ -63,7 +63,7 @@ pub struct Enum {
     pub entries: Vec<Entry>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PrimitiveType {
     Float,
     Double,
@@ -79,7 +79,26 @@ pub enum PrimitiveType {
     Uint64,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+impl PrimitiveType {
+    pub fn size(self) -> usize {
+        match self {
+            PrimitiveType::Float => 4,
+            PrimitiveType::Double => 8,
+            PrimitiveType::Char => 1,
+            PrimitiveType::Int8 => 1,
+            PrimitiveType::Uint8 => 1,
+            PrimitiveType::Uint8MavlinkVersion => 1,
+            PrimitiveType::Int16 => 2,
+            PrimitiveType::Uint16 => 2,
+            PrimitiveType::Int32 => 4,
+            PrimitiveType::Uint32 => 4,
+            PrimitiveType::Int64 => 8,
+            PrimitiveType::Uint64 => 8,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum FieldType {
     Primitive(PrimitiveType),
     Array(PrimitiveType, u8),
