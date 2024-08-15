@@ -564,7 +564,7 @@ impl Normaliser {
                     message: message.clone(),
                     field: field.clone(),
                     r#enum: r#enum.clone(),
-                    field_type: r#type.clone(),
+                    field_type: *r#type,
                 })
             }
         };
@@ -573,7 +573,7 @@ impl Normaliser {
                 message: message.clone(),
                 field: field.clone(),
                 r#enum: r#enum.clone(),
-                field_type: r#type.clone(),
+                field_type: *r#type,
             });
         }
         Ok(r#enum)
