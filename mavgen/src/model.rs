@@ -104,6 +104,15 @@ pub enum FieldType {
     Array(PrimitiveType, u8),
 }
 
+impl FieldType {
+    pub fn wire_size(self) -> usize {
+        match self {
+            FieldType::Primitive(typ) => typ.size(),
+            FieldType::Array(typ, num) => typ.size() * usize::from(num),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RustSizeType {
     U8,

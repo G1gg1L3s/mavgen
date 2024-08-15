@@ -61,6 +61,11 @@ pub enum Error {
         r#enum: Ident,
         field_type: FieldType,
     },
+    MessageIsTooBig {
+        message: Ident,
+        size: usize,
+        max_size: usize,
+    },
 }
 
 impl std::fmt::Display for Error {
@@ -172,6 +177,17 @@ impl std::fmt::Display for Error {
                 field,
                 field_type,
                 r#enum,
+            ),
+            Error::MessageIsTooBig {
+                message,
+                size,
+                max_size,
+            } => write!(
+                f,
+                "{} payload is too big: wire size is {} bytes, but allowed maximum {}",
+                MaybeSuper(Some(message)),
+                size,
+                max_size,
             ),
         }
     }
@@ -458,6 +474,22 @@ impl Normaliser {
                 FieldType::Array(typ, _) => typ.size(),
             })
         });
+
+        let total_wire_size: usize = result_fields
+            .iter()
+            .chain(&result_extension_fields)
+            .map(|field| field.r#type.wire_size())
+            .sum();
+
+        // Maximum size of payload is 255 bytes
+        // https://mavlink.io/en/guide/serialization.html#mavlink2_packet_format
+        if total_wire_size > 255 {
+            return Err(Error::MessageIsTooBig {
+                message: message.clone(),
+                size: total_wire_size,
+                max_size: 255,
+            });
+        }
 
         Ok((result_fields, result_extension_fields))
     }
@@ -1533,6 +1565,31 @@ mod tests {
                 item: "field",
                 super_item: Some(message),
                 name: "TEST_FIELD_1".parse().unwrap(),
+            }
+        );
+    }
+
+    #[test]
+    fn test_normalise_fields_message_too_big() {
+        let normaliser = Normaliser::default();
+        let fields = vec![
+            xml::Field::new_min("TEST_FIELD_1", "uint8_t"),
+            xml::Field::new_min("TEST_FIELD_2", "uint16_t"),
+            xml::Field::new_min("TEST_FIELD_3", "uint64_t[100]"),
+        ];
+
+        let message = Ident::from_str("TEST_MSG").unwrap();
+
+        let err = normaliser
+            .normalise_fields(&message, fields, vec![])
+            .unwrap_err();
+
+        assert_eq!(
+            err,
+            Error::MessageIsTooBig {
+                message,
+                size: 1 + 2 + 100 * 8,
+                max_size: 255
             }
         );
     }
