@@ -555,10 +555,15 @@ impl Normaliser {
             });
         };
         let field_size = match r#type.primitive_type() {
-            PrimitiveType::Uint8 => RustSizeType::U8,
-            PrimitiveType::Uint16 => RustSizeType::U16,
-            PrimitiveType::Uint32 => RustSizeType::U32,
-            PrimitiveType::Uint64 => RustSizeType::U64,
+            // TODO: signed fields with enums are not common so it's not obvious
+            // how to handle if max enum size doesn't fit into signed type.
+            // However, they still do appear, for example, `mode` field in the
+            // `WIFI_CONFIG_AP` has int8_t type and references
+            // WIFI_CONFIG_AP_MODE enum.
+            PrimitiveType::Uint8 | PrimitiveType::Int8 => RustSizeType::U8,
+            PrimitiveType::Uint16 | PrimitiveType::Int16 => RustSizeType::U16,
+            PrimitiveType::Uint32 | PrimitiveType::Int32 => RustSizeType::U32,
+            PrimitiveType::Uint64 | PrimitiveType::Int64 => RustSizeType::U64,
             _ => {
                 return Err(Error::FieldTypeIsIncompatibleWithEnum {
                     message: message.clone(),
@@ -1212,6 +1217,11 @@ mod tests {
             FieldType::Primitive(PrimitiveType::Uint16),
             FieldType::Primitive(PrimitiveType::Uint32),
             FieldType::Primitive(PrimitiveType::Uint64),
+            FieldType::Primitive(PrimitiveType::Int32),
+            FieldType::Primitive(PrimitiveType::Int64),
+            FieldType::Primitive(PrimitiveType::Int8),
+            FieldType::Array(PrimitiveType::Int8, 1),
+            FieldType::Array(PrimitiveType::Uint8, 10),
         ];
 
         for typ in ok_types {
@@ -1226,10 +1236,6 @@ mod tests {
             FieldType::Primitive(PrimitiveType::Double),
             FieldType::Primitive(PrimitiveType::Float),
             FieldType::Primitive(PrimitiveType::Uint8MavlinkVersion),
-            FieldType::Primitive(PrimitiveType::Int32),
-            FieldType::Primitive(PrimitiveType::Int64),
-            FieldType::Primitive(PrimitiveType::Int8),
-            FieldType::Array(PrimitiveType::Int8, 1),
         ];
 
         for typ in not_ok_types {
