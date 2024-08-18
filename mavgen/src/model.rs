@@ -128,6 +128,13 @@ impl FieldType {
             FieldType::Array(typ, num) => typ.size() * usize::from(num),
         }
     }
+
+    pub fn primitive_type(self) -> PrimitiveType {
+        match self {
+            FieldType::Primitive(typ) => typ,
+            FieldType::Array(typ, _) => typ,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

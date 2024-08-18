@@ -554,11 +554,11 @@ impl Normaliser {
                 r#enum,
             });
         };
-        let field_size = match *r#type {
-            FieldType::Primitive(PrimitiveType::Uint8) => RustSizeType::U8,
-            FieldType::Primitive(PrimitiveType::Uint16) => RustSizeType::U16,
-            FieldType::Primitive(PrimitiveType::Uint32) => RustSizeType::U32,
-            FieldType::Primitive(PrimitiveType::Uint64) => RustSizeType::U64,
+        let field_size = match r#type.primitive_type() {
+            PrimitiveType::Uint8 => RustSizeType::U8,
+            PrimitiveType::Uint16 => RustSizeType::U16,
+            PrimitiveType::Uint32 => RustSizeType::U32,
+            PrimitiveType::Uint64 => RustSizeType::U64,
             _ => {
                 return Err(Error::FieldTypeIsIncompatibleWithEnum {
                     message: message.clone(),
@@ -1229,7 +1229,7 @@ mod tests {
             FieldType::Primitive(PrimitiveType::Int32),
             FieldType::Primitive(PrimitiveType::Int64),
             FieldType::Primitive(PrimitiveType::Int8),
-            FieldType::Array(PrimitiveType::Uint8, 1),
+            FieldType::Array(PrimitiveType::Int8, 1),
         ];
 
         for typ in not_ok_types {
@@ -1264,6 +1264,8 @@ mod tests {
         let ok_types = [
             FieldType::Primitive(PrimitiveType::Uint32),
             FieldType::Primitive(PrimitiveType::Uint64),
+            FieldType::Array(PrimitiveType::Uint32, 10),
+            FieldType::Array(PrimitiveType::Uint64, 9),
         ];
 
         for typ in ok_types {
