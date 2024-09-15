@@ -145,6 +145,29 @@ pub enum RustSizeType {
     U64,
 }
 
+impl std::fmt::Display for RustSizeType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let text = match self {
+            RustSizeType::U8 => "u8",
+            RustSizeType::U16 => "u16",
+            RustSizeType::U32 => "u32",
+            RustSizeType::U64 => "u64",
+        };
+        write!(f, "{}", text)
+    }
+}
+
+impl From<RustSizeType> for PrimitiveType {
+    fn from(value: RustSizeType) -> Self {
+        match value {
+            RustSizeType::U8 => PrimitiveType::Uint8,
+            RustSizeType::U16 => PrimitiveType::Uint16,
+            RustSizeType::U32 => PrimitiveType::Uint32,
+            RustSizeType::U64 => PrimitiveType::Uint64,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Field {
     pub name: Ident,
@@ -172,6 +195,16 @@ pub struct Message {
     pub description: Option<String>,
     pub fields: Vec<Field>,
     pub extension_fields: Vec<Field>,
+}
+
+impl Message {
+    pub fn wire_size(&self) -> usize {
+        self.fields
+            .iter()
+            .chain(&self.extension_fields)
+            .map(|field| field.r#type.wire_size())
+            .sum()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

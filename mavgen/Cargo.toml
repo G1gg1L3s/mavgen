@@ -6,6 +6,9 @@ edition = "2021"
 [dependencies]
 crc-any = { version = "2.5.0", default-features = false }
 hard-xml = "1.36.0"
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = "2.0.77"
 topo_sort = "0.4.0"
 
 [dev-dependencies]
