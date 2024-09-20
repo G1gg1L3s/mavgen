@@ -457,6 +457,7 @@ impl Codegen {
                     }
                     (FieldType::Array(typ, size), Some(_)) => {
                         let serialiser = primitive_type_to_serialiser(typ);
+                        let size = usize::from(size);
                         quote! {
                             for i in 0..#size {
                                 __cursor.#serialiser(self.#name[i].bits().try_into().expect("checked"));
@@ -465,6 +466,7 @@ impl Codegen {
                     }
                     (FieldType::Array(typ, size), None) => {
                         let serialiser = primitive_type_to_serialiser(typ);
+                        let size = usize::from(size);
                         quote! {
                             for i in 0..#size {
                                 __cursor.#serialiser(self.#name[i]);

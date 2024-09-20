@@ -830,13 +830,13 @@ fn test_emit_message_message_data_impl() {
                     );
                 }
 
-                for i in 0..4u8 {
+                for i in 0..4usize {
                     __cursor.put_u8(self.enum_array[i].bits().try_into().expect("checked"));
                 }
                 __cursor.put_i32_le(self.enum_plain.bits().try_into().expect("checked"));
                 __cursor.put_i8(self.plain);
                 __cursor.put_slice(&self.plain_array);
-                for i in 0..8u8 {
+                for i in 0..8usize {
                     __cursor.put_u64_le(self.extension_field[i]);
                 }
 
