@@ -316,7 +316,7 @@ fn test_basic_bitmask_enum() {
 
     let expected = quote! {
         bitflags! {
-            #[derive(Clone, Copy, PartialEq, Eq)]
+            #[derive(Debug, Clone, Copy, PartialEq, Eq)]
             pub struct TestFlags: u8 {
                 const Inferno = 1;
                 const Dust2 = 2;
@@ -347,7 +347,7 @@ fn test_bitmask_enum_with_description() {
     let expected = quote! {
         bitflags! {
             #[doc = "This is a test bitmask enum"]
-            #[derive(Clone, Copy, PartialEq, Eq)]
+            #[derive(Debug, Clone, Copy, PartialEq, Eq)]
             pub struct DescFlags: u8 {
                 #[doc = "First flag"]
                 const First = 1;
@@ -385,7 +385,7 @@ fn test_bitmask_enum_with_dev_status() {
     let expected = quote! {
         bitflags! {
             #[doc = "WIP since v1.0.0 - Work in progress"]
-            #[derive(Clone, Copy, PartialEq, Eq)]
+            #[derive(Debug, Clone, Copy, PartialEq, Eq)]
             pub struct StatusFlags: u8 {
                 #[deprecated(note = "Since v2.0.0, replaced by NewFlag. Use NewFlag instead")]
                 const OldFlag = 1;
@@ -423,7 +423,7 @@ fn test_bitmask_enum_with_larger_values() {
 
     let expected = quote! {
         bitflags! {
-            #[derive(Clone, Copy, PartialEq, Eq)]
+            #[derive(Debug, Clone, Copy, PartialEq, Eq)]
             pub struct LargeFlags: u32 {
                 const Small = 1;
                 const Large = 2147483648;
@@ -470,19 +470,6 @@ fn test_basic_enum_default_impl() {
         }
     };
 
-    assert_eq!(result.to_string(), expected.to_string());
-}
-
-#[test]
-fn test_emit_bitmask_debug() {
-    let result = Codegen::default().emit_bitmask_debug_impl(&"PES_PATRON".parse().unwrap());
-    let expected = quote! {
-        impl core::fmt::Debug for PesPatron {
-            fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-                ::bitflags::parser::to_writer(self, f)
-            }
-        }
-    };
     assert_eq!(result.to_string(), expected.to_string());
 }
 
@@ -643,17 +630,11 @@ fn test_emit_bitmask_enum() {
     let expected = quote! {
         bitflags! {
             #[doc = "A test bitmask enum"]
-            #[derive(Clone, Copy, PartialEq, Eq)]
+            #[derive(Debug, Clone, Copy, PartialEq, Eq)]
             pub struct CoolBitmaskEnum: u8 {
                 #[doc = "First flag"]
                 const Flag1 = 1;
                 const Flag2 = 2;
-            }
-        }
-
-        impl core::fmt::Debug for CoolBitmaskEnum {
-            fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-                ::bitflags::parser::to_writer(self, f)
             }
         }
 

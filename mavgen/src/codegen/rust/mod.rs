@@ -129,9 +129,7 @@ impl Codegen {
 
     pub fn emit_enum(&self, r#enum: &model::Enum) -> TokenStream {
         let mut stream = if r#enum.bitmask {
-            let mut stream = self.emit_bitmask_enum(r#enum);
-            stream.extend(self.emit_bitmask_debug_impl(&r#enum.name));
-            stream
+            self.emit_bitmask_enum(r#enum)
         } else {
             self.emit_regular_enum(r#enum)
         };
@@ -245,7 +243,7 @@ impl Codegen {
         let mut stream = self.emit_doc(r#enum.description.as_deref(), r#enum.dev_status.as_ref());
 
         stream.extend(quote! {
-            #[derive(Clone, Copy, PartialEq, Eq)]
+            #[derive(Debug, Clone, Copy, PartialEq, Eq)]
             pub struct #name: #size {
                 #entries
             }
@@ -254,17 +252,6 @@ impl Codegen {
         quote! {
             bitflags! {
                 #stream
-            }
-        }
-    }
-
-    fn emit_bitmask_debug_impl(&self, name: &model::Ident) -> TokenStream {
-        let name = name.pascal_case();
-        quote! {
-            impl core::fmt::Debug for #name {
-                fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-                    ::bitflags::parser::to_writer(self, f)
-                }
             }
         }
     }
