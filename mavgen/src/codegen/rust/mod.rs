@@ -4,6 +4,8 @@ use quote::{format_ident, quote};
 use crate::model::{self, FieldType, PrimitiveType};
 use naming::IdentExt;
 
+pub mod naming;
+
 struct PrimitiveTypeAsRust(PrimitiveType);
 
 impl std::fmt::Display for PrimitiveTypeAsRust {
@@ -798,6 +800,24 @@ fn can_derive_eq(message: &model::Message) -> bool {
     !has_floats
 }
 
-mod naming;
+#[derive(Debug, Default)]
+pub struct ModCodegen {
+    stream: TokenStream,
+}
+
+impl ModCodegen {
+    pub fn add_mod(&mut self, name: &str) {
+        let ident = format_ident!("{}", name);
+
+        self.stream.extend(quote! {
+            #[cfg(feature = #name)]
+            pub mod #ident;
+        })
+    }
+
+    pub fn finish(self) -> TokenStream {
+        self.stream
+    }
+}
 #[cfg(test)]
 mod tests;
