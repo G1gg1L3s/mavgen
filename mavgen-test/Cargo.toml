@@ -1,0 +1,47 @@
+[package]
+name = "mavgen-test"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bitflags = "2.6"
+clap = { version = "4.5.18", features = ["derive"], optional = true }
+mavlink-core = { git = "https://github.com/mavlink/rust-mavlink.git" }
+num-derive = "0.3"
+num-traits = { version = "0.2", default-features = false }
+
+[build-dependencies]
+mavgen = { path = "../mavgen" }
+
+[dev-dependencies]
+assert_cmd = "2.0"
+
+[features]
+mavgen-test = ["dep:clap"]
+
+all-dialects = [
+    "all",
+    "ardupilotmega",
+    "asluav",
+    "avssuas",
+    "common",
+    "cubepilot",
+    "development",
+    "matrixpilot",
+    "paparazzi",
+    "storm32",
+    "u_avionix",
+    "ualberta",
+]
+all = []
+ardupilotmega = []
+asluav = []
+avssuas = []
+common = []
+cubepilot = []
+development = []
+matrixpilot = []
+paparazzi = []
+storm32 = []
+u_avionix = []
+ualberta = []
