@@ -79,6 +79,16 @@ fn rust_size_type(typ: model::RustSizeType) -> syn::Ident {
     syn::Ident::new(literal, proc_macro2::Span::call_site())
 }
 
+fn remove_line_leading_whitespaces(s: &str) -> String {
+    let mut output = String::with_capacity(s.len());
+    for line in s.lines() {
+        let line = line.trim_start();
+        output.push_str(line);
+        output.push('\n');
+    }
+    output
+}
+
 #[derive(Debug, Default)]
 pub struct Codegen {}
 
@@ -169,7 +179,13 @@ impl Codegen {
 
         if !desc.is_empty() {
             let desc = desc.replace('\t', "    ");
+            // The document is processed as markdown, where lines starting with
+            // more than 4 spaces are treated as code blocks. This can happen
+            // easily when XML is formatted for readability, leading to long
+            // indented lines. To avoid this, we'll remove the leading spaces.
+            let desc = remove_line_leading_whitespaces(&desc);
             let doc = desc.trim();
+
             stream.extend(quote! { #[doc = #doc] });
         }
 

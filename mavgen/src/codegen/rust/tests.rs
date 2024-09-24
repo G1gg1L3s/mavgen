@@ -60,6 +60,14 @@ fn test_description_only() {
 }
 
 #[test]
+fn test_description_with_leading_newline() {
+    let description = "    A test\n    description\n\talso this";
+    let result = Codegen::default().emit_doc(Some(description), None);
+    let expected = quote! { #[doc = "A test\ndescription\nalso this"] };
+    assert_eq!(result.to_string(), expected.to_string());
+}
+
+#[test]
 fn test_wip_status_only() {
     let dev_status = model::DevStatus::Wip {
         since: Some("2024-09-02".to_owned()),
