@@ -115,9 +115,7 @@ pub fn generate_one(input: &Path, output: &Path) -> Result<(), Error> {
     let output = if output.is_file() {
         output.to_path_buf()
     } else {
-        let mut output = output.with_file_name(module_name);
-        output.set_extension("rs");
-        output
+        output.join(format!("{}.rs", module_name))
     };
 
     let stream = codegen.emit_module(&normalised);
