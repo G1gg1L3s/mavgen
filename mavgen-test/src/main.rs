@@ -41,12 +41,20 @@ struct Args {
     address: String,
 }
 
+#[cfg(not(feature = "serde"))]
+trait Message: mavlink_core::Message {}
+
+#[cfg(feature = "serde")]
+trait Message: mavlink_core::Message + serde::Serialize + for<'a> serde::Deserialize<'a> {}
+
+#[cfg(feature = "serde")]
+fn test_serde<M: Message>(message: M) -> M {
+    let json = serde_json::to_string(&message).unwrap();
+    serde_json::from_str(&json).unwrap()
+}
+
 #[allow(unused)]
-fn test<M: mavlink_core::Message>(
-    address: &str,
-    heartbeat: M,
-    is_hearbeat: impl FnOnce(&M) -> bool,
-) {
+fn test<M: Message>(address: &str, heartbeat: M, is_hearbeat: impl FnOnce(&M) -> bool) {
     let connection = mavlink_core::connect::<M>(address).unwrap();
 
     let heartbeat = mavlink_core::MavFrame {
@@ -71,6 +79,10 @@ fn test<M: mavlink_core::Message>(
             Err(err) => panic!("{:?}", err),
         };
         println!("RECEIVED {:?}", data.message_name());
+
+        #[cfg(feature = "serde")]
+        let data = test_serde(data);
+
         connection.send_default(&data).unwrap();
         println!("SENT {:?}", data.message_name());
     }
@@ -79,6 +91,8 @@ fn test<M: mavlink_core::Message>(
 #[allow(unused)]
 macro_rules! test_dialect {
     ($dialect:ident, $address:expr) => {{
+        impl Message for mavgen_test::messages::$dialect::MavMessage {}
+
         use mavgen_test::messages::$dialect::{
             Heartbeat, MavAutopilot, MavMessage, MavModeFlag, MavState, MavType,
         };

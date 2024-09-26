@@ -2,6 +2,7 @@
 
 use std::{
     path::{Path, PathBuf},
+    println,
     process::Command,
 };
 
@@ -79,6 +80,7 @@ pub fn compile_mavlink(def: &Path) -> PathBuf {
 
 #[allow(unused)]
 fn test_dialect(dialect_xml: &str) {
+    init_python();
     let mavgen_test_bin = assert_cmd::cargo::cargo_bin("mavgen-test");
 
     let dialect_module = compile_mavlink(&definitions().join(dialect_xml));
