@@ -136,6 +136,10 @@ impl Codegen {
             use num_traits::FromPrimitive;
             #[allow(unused_imports)]
             use num_traits::ToPrimitive;
+
+            #[cfg(feature = "serde")]
+            #[allow(unused_imports)]
+            use serde::{Deserialize, Serialize};
         }
     }
 
@@ -230,6 +234,7 @@ impl Codegen {
 
         stream.extend(quote! {
             #[derive(Debug, Clone, Copy, PartialEq, Eq, FromPrimitive, ToPrimitive)]
+            #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
             #[repr(#typ)]
             pub enum #name {
                 #entries
@@ -262,6 +267,7 @@ impl Codegen {
 
         stream.extend(quote! {
             #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+            #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
             pub struct #name: #size {
                 #entries
             }
@@ -347,9 +353,29 @@ impl Codegen {
             stream.extend(quote! { #[derive(Debug, Clone, Copy, PartialEq)] });
         }
 
-        let fields = message.fields.iter().chain(&message.extension_fields);
-        let defs = fields.map(|field| {
+        let defs = message.all_fields().map(|(field, kind)| {
             let mut stream = self.emit_doc(field.description.as_deref(), None);
+
+            if let FieldType::Array(_, _) = field.r#type {
+                stream.extend(quote! {
+                    #[cfg_attr(feature = "serde", serde(with = "serde_arrays"))]
+                });
+            }
+
+            if let model::FieldKind::Extension = kind  {
+                // From MAVLink specification:
+                // If sent by an implementation that doesn't have the extensions fields
+                // then the recipient will see zero values for the extensions fields.
+                let attr = if field.r#enum.is_some() {
+                    quote!{ #[cfg_attr(feature = "serde", serde(default))] }
+                } else {
+                    quote!{
+                        #[cfg_attr(feature = "serde", serde(default = "mavlink_core::utils::RustDefault::rust_default"))]
+                    }
+                };
+                stream.extend(attr);
+            }
+
 
             let name = field.name.snake_case();
 
@@ -376,6 +402,7 @@ impl Codegen {
         let name = message.name.pascal_case();
 
         stream.extend(quote! {
+            #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
             pub struct #name {
                 #(#defs),*
             }
@@ -609,6 +636,7 @@ impl Codegen {
 
         quote! {
             #[derive(Debug, Clone, PartialEq)]
+            #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
             pub enum MavMessage {
                 #(#entries),*,
             }

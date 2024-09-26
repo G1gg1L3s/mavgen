@@ -183,6 +183,7 @@ fn test_basic_enum() {
 
     let expected = quote! {
         #[derive(Debug, Clone, Copy, PartialEq, Eq, FromPrimitive, ToPrimitive)]
+        #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         #[repr(u8)]
         pub enum TestEnum {
             One = 1,
@@ -213,6 +214,7 @@ fn test_enum_with_description() {
     let expected = quote! {
         #[doc = "This is a test enum"]
         #[derive(Debug, Clone, Copy, PartialEq, Eq, FromPrimitive, ToPrimitive)]
+        #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         #[repr(u8)]
         pub enum DescEnum {
             #[doc = "First entry"]
@@ -250,6 +252,7 @@ fn test_enum_with_dev_status() {
     let expected = quote! {
         #[doc = "WIP since v1.0.0 - Work in progress"]
         #[derive(Debug, Clone, Copy, PartialEq, Eq, FromPrimitive, ToPrimitive)]
+        #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         #[repr(u8)]
         pub enum StatusEnum {
             #[deprecated(note = "Since v2.0.0, replaced by NewEntry. Use NewEntry instead")]
@@ -287,6 +290,7 @@ fn test_enum_with_larger_values() {
 
     let expected = quote! {
         #[derive(Debug, Clone, Copy, PartialEq, Eq, FromPrimitive, ToPrimitive)]
+        #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         #[repr(u32)]
         pub enum LargeEnum {
             Small = 0,
@@ -325,6 +329,7 @@ fn test_basic_bitmask_enum() {
     let expected = quote! {
         bitflags! {
             #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+            #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
             pub struct TestFlags: u8 {
                 const Inferno = 1;
                 const Dust2 = 2;
@@ -356,6 +361,7 @@ fn test_bitmask_enum_with_description() {
         bitflags! {
             #[doc = "This is a test bitmask enum"]
             #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+            #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
             pub struct DescFlags: u8 {
                 #[doc = "First flag"]
                 const First = 1;
@@ -394,6 +400,7 @@ fn test_bitmask_enum_with_dev_status() {
         bitflags! {
             #[doc = "WIP since v1.0.0 - Work in progress"]
             #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+            #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
             pub struct StatusFlags: u8 {
                 #[deprecated(note = "Since v2.0.0, replaced by NewFlag. Use NewFlag instead")]
                 const OldFlag = 1;
@@ -432,6 +439,7 @@ fn test_bitmask_enum_with_larger_values() {
     let expected = quote! {
         bitflags! {
             #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+            #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
             pub struct LargeFlags: u32 {
                 const Small = 1;
                 const Large = 2147483648;
@@ -576,6 +584,7 @@ fn test_emit_regular_enum() {
     let expected = quote! {
         #[doc = "A test enum"]
         #[derive(Debug, Clone, Copy, PartialEq, Eq, FromPrimitive, ToPrimitive)]
+        #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         #[repr(u8)]
         pub enum CoolEnum {
             #[doc = "First entry"]
@@ -639,6 +648,7 @@ fn test_emit_bitmask_enum() {
         bitflags! {
             #[doc = "A test bitmask enum"]
             #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+            #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
             pub struct CoolBitmaskEnum: u8 {
                 #[doc = "First flag"]
                 const Flag1 = 1;
@@ -740,14 +750,19 @@ fn test_emit_message_def() {
     let expected = quote! {
         #[doc = "Some test message"]
         #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+        #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         pub struct CoolTestMessage {
             #[doc = "Array of enums"]
+            #[cfg_attr(feature = "serde", serde(with = "serde_arrays"))]
             pub enum_array: [CoolEnum; 4usize],
             #[doc = "Regular enum"]
             pub enum_plain: CoolEnum,
             pub plain: i8,
+            #[cfg_attr(feature = "serde", serde(with = "serde_arrays"))]
             pub plain_array: [u8; 20usize],
             #[doc = "Emergency status"]
+            #[cfg_attr(feature = "serde", serde(with = "serde_arrays"))]
+            #[cfg_attr(feature = "serde", serde(default = "mavlink_core::utils::RustDefault::rust_default"))]
             pub extension_field: [u64; 8usize]
         }
     };
@@ -779,6 +794,7 @@ fn test_emit_message_def_without_eq() {
     let expected = quote! {
         #[deprecated(note = "Since 2024-09, replaced by YOU")]
         #[derive(Debug, Clone, Copy, PartialEq)]
+        #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         pub struct NonEqMessage {
             pub float_field: f32
         }
@@ -925,6 +941,7 @@ fn test_emit_mav_message_def() {
     let stream = codegen.emit_mav_message_def(&messages);
     let expected = quote! {
         #[derive(Debug, Clone, PartialEq)]
+        #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         pub enum MavMessage {
             Heartbeat(Heartbeat),
             ProtocolVersion(ProtocolVersion),

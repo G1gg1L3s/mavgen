@@ -187,6 +187,12 @@ pub struct Field {
     pub description: Option<String>,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum FieldKind {
+    Regular,
+    Extension,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Message {
     pub name: Ident,
@@ -204,6 +210,19 @@ impl Message {
             .chain(&self.extension_fields)
             .map(|field| field.r#type.wire_size())
             .sum()
+    }
+
+    pub fn all_fields(&self) -> impl Iterator<Item = (&Field, FieldKind)> {
+        let fields = self
+            .fields
+            .iter()
+            .zip(std::iter::repeat(FieldKind::Regular));
+        let ext_fields = self
+            .extension_fields
+            .iter()
+            .zip(std::iter::repeat(FieldKind::Extension));
+
+        fields.chain(ext_fields)
     }
 }
 
