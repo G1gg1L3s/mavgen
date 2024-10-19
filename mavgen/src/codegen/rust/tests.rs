@@ -841,7 +841,7 @@ fn test_emit_message_message_data_impl() {
             type Message = MavMessage;
             const ID: u32 = 10002u32;
             const NAME: &'static str = "COOL_TEST_MESSAGE";
-            const EXTRA_CRC: u8 = 191u8;
+            const EXTRA_CRC: u8 = 62u8;
             const ENCODED_LEN: usize = 93usize;
 
             fn ser(&self, version: MavlinkVersion, bytes: &mut [u8]) -> usize {
@@ -854,10 +854,10 @@ fn test_emit_message_message_data_impl() {
                     );
                 }
 
+                __cursor.put_i32_le(self.enum_plain.bits().try_into().expect("checked"));
                 for i in 0..4usize {
                     __cursor.put_u8(self.enum_array[i].bits().try_into().expect("checked"));
                 }
-                __cursor.put_i32_le(self.enum_plain.bits().try_into().expect("checked"));
                 __cursor.put_i8(self.plain);
                 __cursor.put_slice(&self.plain_array);
                 for i in 0..8usize {
@@ -885,13 +885,13 @@ fn test_emit_message_message_data_impl() {
                     Bytes::new(__input)
                 };
                 Ok(Self{
+                    enum_plain: CoolEnum::try_from_bits(__cursor.get_i32_le().try_into().expect("checked"))?,
                     enum_array: [
                         CoolEnum::try_from_bits(__cursor.get_u8().try_into().expect("checked"))?,
                         CoolEnum::try_from_bits(__cursor.get_u8().try_into().expect("checked"))?,
                         CoolEnum::try_from_bits(__cursor.get_u8().try_into().expect("checked"))?,
                         CoolEnum::try_from_bits(__cursor.get_u8().try_into().expect("checked"))?,
                     ],
-                    enum_plain: CoolEnum::try_from_bits(__cursor.get_i32_le().try_into().expect("checked"))?,
                     plain: __cursor.get_i8(),
                     plain_array: __cursor.get_array(),
                     extension_field: [

@@ -224,6 +224,18 @@ impl Message {
 
         fields.chain(ext_fields)
     }
+
+    pub fn sorted_fields(&self) -> Vec<&Field> {
+        // See https://mavlink.io/en/guide/serialization.html#field_reordering
+        let mut copy = self.fields.iter().collect::<Vec<_>>();
+        copy.sort_by_key(|field| {
+            std::cmp::Reverse(match field.r#type {
+                FieldType::Primitive(typ) => typ.size(),
+                FieldType::Array(typ, _) => typ.size(),
+            })
+        });
+        copy
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -260,7 +272,7 @@ impl Message {
         crc.digest(self.name.as_ref().as_bytes());
         crc.digest(b" ");
 
-        for field in &self.fields {
+        for field in self.sorted_fields() {
             let typ = match field.r#type {
                 FieldType::Primitive(typ) => typ,
                 FieldType::Array(typ, _) => typ,

@@ -467,14 +467,6 @@ impl Normaliser {
             }
         }
 
-        // See https://mavlink.io/en/guide/serialization.html#field_reordering
-        result_fields.sort_by_key(|field| {
-            std::cmp::Reverse(match field.r#type {
-                FieldType::Primitive(typ) => typ.size(),
-                FieldType::Array(typ, _) => typ.size(),
-            })
-        });
-
         let total_wire_size: usize = result_fields
             .iter()
             .chain(&result_extension_fields)
@@ -1463,9 +1455,9 @@ mod tests {
         assert_eq!(
             result,
             vec![
-                field_min("TEST_FIELD_3", FieldType::Primitive(PrimitiveType::Uint32)),
-                field_min("TEST_FIELD_2", FieldType::Primitive(PrimitiveType::Uint16)),
                 field_min("TEST_FIELD_1", FieldType::Primitive(PrimitiveType::Uint8)),
+                field_min("TEST_FIELD_2", FieldType::Primitive(PrimitiveType::Uint16)),
+                field_min("TEST_FIELD_3", FieldType::Primitive(PrimitiveType::Uint32)),
             ]
         );
 
@@ -1528,17 +1520,17 @@ mod tests {
         assert_eq!(
             result,
             vec![
-                field_min("TEST_FIELD_6", FieldType::Primitive(PrimitiveType::Double)),
-                field_min("TEST_FIELD_9", FieldType::Primitive(PrimitiveType::Uint64)),
-                field_min("TEST_FIELD_11", FieldType::Array(PrimitiveType::Uint64, 8)),
-                field_min("TEST_FIELD_4", FieldType::Primitive(PrimitiveType::Int32)),
-                field_min("TEST_FIELD_7", FieldType::Primitive(PrimitiveType::Float)),
-                field_min("TEST_FIELD_8", FieldType::Array(PrimitiveType::Uint32, 10)),
-                field_min("TEST_FIELD_10", FieldType::Primitive(PrimitiveType::Uint32)),
+                field_min("TEST_FIELD_1", FieldType::Primitive(PrimitiveType::Uint8)),
                 field_min("TEST_FIELD_2", FieldType::Primitive(PrimitiveType::Int16)),
                 field_min("TEST_FIELD_3", FieldType::Primitive(PrimitiveType::Uint16)),
-                field_min("TEST_FIELD_1", FieldType::Primitive(PrimitiveType::Uint8)),
+                field_min("TEST_FIELD_4", FieldType::Primitive(PrimitiveType::Int32)),
                 field_min("TEST_FIELD_5", FieldType::Array(PrimitiveType::Uint8, 20)),
+                field_min("TEST_FIELD_6", FieldType::Primitive(PrimitiveType::Double)),
+                field_min("TEST_FIELD_7", FieldType::Primitive(PrimitiveType::Float)),
+                field_min("TEST_FIELD_8", FieldType::Array(PrimitiveType::Uint32, 10)),
+                field_min("TEST_FIELD_9", FieldType::Primitive(PrimitiveType::Uint64)),
+                field_min("TEST_FIELD_10", FieldType::Primitive(PrimitiveType::Uint32)),
+                field_min("TEST_FIELD_11", FieldType::Array(PrimitiveType::Uint64, 8)),
             ]
         );
 
@@ -1548,6 +1540,32 @@ mod tests {
                 field_min("EXT_FIELD_1", FieldType::Primitive(PrimitiveType::Int8)),
                 field_min("EXT_FIELD_2", FieldType::Primitive(PrimitiveType::Int16)),
                 field_min("EXT_FIELD_3", FieldType::Array(PrimitiveType::Int64, 10)),
+            ]
+        );
+
+        let message = Message {
+            name: "SOME_MESSAGE".parse().unwrap(),
+            id: 1234,
+            dev_status: None,
+            description: None,
+            fields: result,
+            extension_fields: ext_result,
+        };
+
+        assert_eq!(
+            message.sorted_fields(),
+            vec![
+                &field_min("TEST_FIELD_6", FieldType::Primitive(PrimitiveType::Double)),
+                &field_min("TEST_FIELD_9", FieldType::Primitive(PrimitiveType::Uint64)),
+                &field_min("TEST_FIELD_11", FieldType::Array(PrimitiveType::Uint64, 8)),
+                &field_min("TEST_FIELD_4", FieldType::Primitive(PrimitiveType::Int32)),
+                &field_min("TEST_FIELD_7", FieldType::Primitive(PrimitiveType::Float)),
+                &field_min("TEST_FIELD_8", FieldType::Array(PrimitiveType::Uint32, 10)),
+                &field_min("TEST_FIELD_10", FieldType::Primitive(PrimitiveType::Uint32)),
+                &field_min("TEST_FIELD_2", FieldType::Primitive(PrimitiveType::Int16)),
+                &field_min("TEST_FIELD_3", FieldType::Primitive(PrimitiveType::Uint16)),
+                &field_min("TEST_FIELD_1", FieldType::Primitive(PrimitiveType::Uint8)),
+                &field_min("TEST_FIELD_5", FieldType::Array(PrimitiveType::Uint8, 20)),
             ]
         );
     }
@@ -1647,9 +1665,9 @@ mod tests {
                 dev_status: None,
                 description: Some("Description.".into()),
                 fields: vec![
-                    field_min("TEST_FIELD_3", FieldType::Primitive(PrimitiveType::Uint32)),
-                    field_min("TEST_FIELD_2", FieldType::Primitive(PrimitiveType::Uint16)),
                     field_min("TEST_FIELD_1", FieldType::Primitive(PrimitiveType::Uint8)),
+                    field_min("TEST_FIELD_2", FieldType::Primitive(PrimitiveType::Uint16)),
+                    field_min("TEST_FIELD_3", FieldType::Primitive(PrimitiveType::Uint32)),
                 ],
                 extension_fields: vec![field_min(
                     "EXT_FIELD_1",
@@ -2092,19 +2110,6 @@ mod tests {
                             ..default_field.clone()
                         },
                         Field {
-                            name: "stallSpeed".parse().unwrap(),
-                            r#type: FieldType::Primitive(
-                                PrimitiveType::Uint16,
-                            ),
-                            units: Some(
-                                "cm/s".into(),
-                            ),
-                            description: Some(
-                                "Aircraft stall speed in cm/s".into(),
-                            ),
-                            ..default_field.clone()
-                        },
-                        Field {
                             name: "callsign".parse().unwrap(),
                             r#type: FieldType::Array(
                                 PrimitiveType::Char,
@@ -2161,6 +2166,19 @@ mod tests {
                             ),
                             description: Some(
                                 "GPS antenna longitudinal offset from nose [if non-zero, take position (in meters) divide by 2 and add one] (table 2-37 DO-282B)".into(),
+                            ),
+                            ..default_field.clone()
+                        },
+                        Field {
+                            name: "stallSpeed".parse().unwrap(),
+                            r#type: FieldType::Primitive(
+                                PrimitiveType::Uint16,
+                            ),
+                            units: Some(
+                                "cm/s".into(),
+                            ),
+                            description: Some(
+                                "Aircraft stall speed in cm/s".into(),
                             ),
                             ..default_field.clone()
                         },
@@ -2240,6 +2258,29 @@ mod tests {
                             ),
                             description: Some(
                                 "Altitude (WGS84). UP +ve. If unknown set to INT32_MAX".into(),
+                            ),
+                            ..default_field.clone()
+                        },
+                        Field {
+                            name: "gpsFix".parse().unwrap(),
+                            r#type: FieldType::Primitive(
+                                PrimitiveType::Uint8,
+                            ),
+                            r#enum: Some(
+                                "UAVIONIX_ADSB_OUT_DYNAMIC_GPS_FIX".parse().unwrap(),
+                            ),
+                            description: Some(
+                                "0-1: no fix, 2: 2D fix, 3: 3D fix, 4: DGPS, 5: RTK".into(),
+                            ),
+                            ..default_field.clone()
+                        },
+                        Field {
+                            name: "numSats".parse().unwrap(),
+                            r#type: FieldType::Primitive(
+                                PrimitiveType::Uint8,
+                            ),
+                            description: Some(
+                                "Number of satellites visible. If unknown set to UINT8_MAX".into(),
                             ),
                             ..default_field.clone()
                         },
@@ -2335,6 +2376,19 @@ mod tests {
                             ..default_field.clone()
                         },
                         Field {
+                            name: "emergencyStatus".parse().unwrap(),
+                            r#type: FieldType::Primitive(
+                                PrimitiveType::Uint8,
+                            ),
+                            r#enum: Some(
+                                "UAVIONIX_ADSB_EMERGENCY_STATUS".parse().unwrap(),
+                            ),
+                            description: Some(
+                                "Emergency status".into(),
+                            ),
+                            ..default_field.clone()
+                        },
+                        Field {
                             name: "state".parse().unwrap(),
                             r#type: FieldType::Primitive(
                                 PrimitiveType::Uint16,
@@ -2357,42 +2411,6 @@ mod tests {
                             ),
                             description: Some(
                                 "Mode A code (typically 1200 [0x04B0] for VFR)".into(),
-                            ),
-                            ..default_field.clone()
-                        },
-                        Field {
-                            name: "gpsFix".parse().unwrap(),
-                            r#type: FieldType::Primitive(
-                                PrimitiveType::Uint8,
-                            ),
-                            r#enum: Some(
-                                "UAVIONIX_ADSB_OUT_DYNAMIC_GPS_FIX".parse().unwrap(),
-                            ),
-                            description: Some(
-                                "0-1: no fix, 2: 2D fix, 3: 3D fix, 4: DGPS, 5: RTK".into(),
-                            ),
-                            ..default_field.clone()
-                        },
-                        Field {
-                            name: "numSats".parse().unwrap(),
-                            r#type: FieldType::Primitive(
-                                PrimitiveType::Uint8,
-                            ),
-                            description: Some(
-                                "Number of satellites visible. If unknown set to UINT8_MAX".into(),
-                            ),
-                            ..default_field.clone()
-                        },
-                        Field {
-                            name: "emergencyStatus".parse().unwrap(),
-                            r#type: FieldType::Primitive(
-                                PrimitiveType::Uint8,
-                            ),
-                            r#enum: Some(
-                                "UAVIONIX_ADSB_EMERGENCY_STATUS".parse().unwrap(),
-                            ),
-                            description: Some(
-                                "Emergency status".into(),
                             ),
                             ..default_field.clone()
                         },

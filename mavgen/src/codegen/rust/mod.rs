@@ -478,7 +478,7 @@ impl Codegen {
     }
 
     fn emit_message_serialise_impl(&self, message: &model::Message) -> TokenStream {
-        let fields = message.fields.iter().chain(&message.extension_fields).map(
+        let fields = message.sorted_fields().into_iter().chain(&message.extension_fields).map(
             |field| -> TokenStream {
                 let name = field.name.snake_case();
 
@@ -547,8 +547,8 @@ impl Codegen {
 
     fn emit_message_deserialise_impl(&self, message: &model::Message) -> TokenStream {
         let fields = message
-            .fields
-            .iter()
+            .sorted_fields()
+            .into_iter()
             // TODO: handle extensions fields for v1
             .chain(&message.extension_fields)
             .map(|field| {
