@@ -942,8 +942,11 @@ fn test_emit_mav_message_def() {
     let expected = quote! {
         #[derive(Debug, Clone, PartialEq)]
         #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+        #[cfg_attr(feature = "serde", serde(tag = "mavpackettype"))]
         pub enum MavMessage {
+            #[cfg_attr(feature = "serde", serde(rename = "HEARTBEAT"))]
             Heartbeat(Heartbeat),
+            #[cfg_attr(feature = "serde", serde(rename = "PROTOCOL_VERSION"))]
             ProtocolVersion(ProtocolVersion),
         }
     };

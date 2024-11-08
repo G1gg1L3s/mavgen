@@ -631,12 +631,17 @@ impl Codegen {
     fn emit_mav_message_def(&self, messages: &[model::Message]) -> TokenStream {
         let entries = messages.iter().map(|message| {
             let name = message.name.pascal_case();
-            quote! { #name(#name) }
+            let str_name = message.name.as_ref();
+            quote! {
+                #[cfg_attr(feature = "serde", serde(rename = #str_name))]
+                #name(#name)
+            }
         });
 
         quote! {
             #[derive(Debug, Clone, PartialEq)]
             #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+            #[cfg_attr(feature = "serde", serde(tag = "mavpackettype"))]
             pub enum MavMessage {
                 #(#entries),*,
             }
